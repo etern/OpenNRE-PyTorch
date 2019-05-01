@@ -1,3 +1,9 @@
+data/
+raw_data/
+checkpoint/
+test_result/
+.vscode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -123,7 +123,7 @@ class Config(object):
 			self.data_train_scope = np.load(os.path.join(self.data_path, 'train_ins_scope.npy'))
 		print("Finish reading")
 		self.train_order = list(range(len(self.data_train_label)))
-		self.train_batches = len(self.data_train_label) / self.batch_size
+		self.train_batches = len(self.data_train_label) // self.batch_size
 		if len(self.data_train_label) % self.batch_size != 0:
 			self.train_batches += 1
 
@@ -141,7 +141,7 @@ class Config(object):
 			self.data_test_label = np.load(os.path.join(self.data_path, 'test_ins_label.npy'))
 			self.data_test_scope = np.load(os.path.join(self.data_path, 'test_ins_scope.npy'))
 		print("Finish reading")
-		self.test_batches = len(self.data_test_label) / self.batch_size
+		self.test_batches = len(self.data_test_label) // self.batch_size
 		if len(self.data_test_label) % self.batch_size != 0:
 			self.test_batches += 1
 
@@ -220,7 +220,7 @@ class Config(object):
 			else:
 				self.acc_not_NA.add(prediction == self.batch_label[i])
 			self.acc_total.add(prediction == self.batch_label[i])
-		return loss.data[0]
+		return loss.item()
 
 	def test_one_step(self):
 		self.testModel.embedding.word = to_var(self.batch_word)

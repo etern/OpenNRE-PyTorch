@@ -10,7 +10,7 @@ import sys
 import os
 import argparse
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '4'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_name', type = str, default = 'pcnn_att', help = 'name of the model')
 args = parser.parse_args()

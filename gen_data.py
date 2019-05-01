@@ -102,7 +102,7 @@ def init(file_name, word_vec_file_name, rel2id_file_name, max_length = 120, case
 	bag_key = []
 	for i in range(len(ori_data)):
 		if  i%1000 == 0:
-			print i
+			print(i)
 		sen = ori_data[i]
 		# sen_label 
 		if sen['relation'] in rel2id:
