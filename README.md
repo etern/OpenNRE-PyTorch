@@ -51,39 +51,27 @@ unzip raw_data.zip
 ```
 ## Dataset
 
-### NYT10 Dataset
+### CCKS 2019人物关系抽取数据集
 
-NYT10 is a distantly supervised dataset originally released by the paper "Sebastian Riedel, Limin Yao, and Andrew McCallum. Modeling relations and their mentions without labeled text.". Here is the download [link](http://iesl.cs.umass.edu/riedel/ecml/) for the original data.
-You can download the NYT10 dataset from [Google Drive](https://drive.google.com/file/d/1g95gbMUsGfeEmihZSb0kXPbMTuRA4lid/view?usp=sharing). And the data details are as follows.
+下载[链接](https://www.biendata.com/competition/ccks_2019_ipre/)
+
+- 远程监督数据集，不精确
+- 句子已分词，有标点
+
+### 数据集错误示例
+- 外国人名只取了一部分：TRAIN_SENT_ID_000856├──┤米莉├──┤燕妮├──┤朵 依 燕妮 则 以 “ 玛琪 ” 来 称呼 玛琪 米莉 耶 。
 
 ### Training Data & Testing Data
 
-Training data file and testing data file, containing sentences and their corresponding entity pairs and relations, should be in the following format
+### 词嵌入
 
+网上下载的微博词嵌入。19万词，300维向量。含标点、人名、特殊符号等，按词频降序排序。
+
+首行是个数与维度信息，一行一个词，每行301列以空格分隔，第一列为词，后300列为向量浮点值(-1.0, 1.0)，样例如下。
 ```
-[
-    {
-        'sentence': 'Bill Gates is the founder of Microsoft .',
-        'head': {'word': 'Bill Gates', 'id': 'm.03_3d', ...(other information)},
-        'tail': {'word': 'Microsoft', 'id': 'm.07dfk', ...(other information)},
-        'relation': 'founder'
-    },
-    ...
-]
-```
-
-**IMPORTANT**: In the sentence part, words and punctuations should be separated by blank spaces.
-
-### Word Embedding Data
-
-Word embedding data is used to initialize word embedding in the networks, and should be in the following format
-
-```
-[
-    {'word': 'the', 'vec': [0.418, 0.24968, ...]},
-    {'word': ',', 'vec': [0.013441, 0.23682, ...]},
-    ...
-]
+195202 300
+， 0.094386 -0.200944 xx xx
+的 -0.124044 -0.053688 xx xx
 ```
 
 ### Relation-ID Mapping Data
