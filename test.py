@@ -28,8 +28,16 @@ con.set_data_path('./chinese_data')
 con.set_use_bag(False)
 con.set_num_classes(35)
 
-con.set_max_epoch(15)
-con.load_test_data()
+# con.set_max_epoch(15)
+# con.load_test_data()
+# con.set_test_model(model[args.model_name])
+# con.set_epoch_range([7,12])
+# con.test()
+
+con.load_predict_data()
 con.set_test_model(model[args.model_name])
-con.set_epoch_range([7,12])
-con.test()
+res = con.predict('./checkpoint/PCNN_ATT-14')
+with open('./chinese_data/result_sent.txt', 'wt') as f:
+	for i, tag in enumerate(res):
+		f.write(f'TEST_SENT_ID_{i+1:06}\t{tag}\n')
+

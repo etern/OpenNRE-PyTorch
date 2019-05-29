@@ -14,8 +14,8 @@ def load_data(data_file: Path, tag_file: Path) -> List[SentenceTriplet]:
     print("读取数据：句子-关系三元组...")
     data: List[SentenceTriplet] = []
     multi_tag = 0
-    with data_file.open() as sent, tag_file.open() as tag:
-        for data_line, tag_line in zip(sent, tag):
+    with data_file.open() as sent, tag_file.open() as tagfile:
+        for data_line, tag_line in zip(sent, tagfile):
             sent_id, head, tail, sent = data_line.strip('\n').split('\t')
             tag_sent_id, tag = tag_line.strip('\n').split('\t')
             assert(sent_id == tag_sent_id)
@@ -26,6 +26,14 @@ def load_data(data_file: Path, tag_file: Path) -> List[SentenceTriplet]:
     print(f'丢弃{multi_tag}个多标签数据，暂不处理')
     return data
 
+# 读取无标测试数据
+def load_test_data(data_file: Path) -> List[SentenceTriplet]:
+    data: List[SentenceTriplet] = []
+    with data_file.open() as sent:
+        for data_line in sent:
+            _, head, tail, sent = data_line.strip('\n').split('\t')
+            data.append(SentenceTriplet(sent, head, tail, None))
+    return data
 
 def load_word_vector(file_name: Path):
     word2id = {}
@@ -54,7 +62,7 @@ def load_word_vector(file_name: Path):
 
 
 def vectorize_data(original_data, sentence_length,
-                   word2id: Dict[str, int], relation2id: Dict[str, int], is_training=True):
+                   word2id: Dict[str, int], dataset):
     sen_total = len(original_data)
     sen_word = np.zeros((sen_total, sentence_length), dtype=np.int64)
     sen_pos1 = np.zeros((sen_total, sentence_length), dtype=np.int64)
@@ -92,10 +100,21 @@ def vectorize_data(original_data, sentence_length,
             else:
                 sen_mask[i][j] = [0, 0, 100]
 
-    print("处理标签...")
     ins_scope = np.stack(
-        [list(range(sen_total)), list(range(sen_total))], axis=1)
-    if is_training:
+        [list(range(len(original_data))), list(range(len(original_data)))], axis=1)
+    ins_scope = np.array(ins_scope, dtype=np.int64)
+    print("保存数据集矩阵")
+    name_prefix = dataset
+    np.save(out_path / f'{name_prefix}_word.npy', sen_word)
+    np.save(out_path / f'{name_prefix}_pos1.npy', sen_pos1)
+    np.save(out_path / f'{name_prefix}_pos2.npy', sen_pos2)
+    np.save(out_path / f'{name_prefix}_mask.npy', sen_mask)
+    np.save(out_path / f'{name_prefix}_ins_scope.npy', ins_scope)
+    print('保存完成')
+
+def vectorize_label(original_data, relation2id: Dict[str, int], dataset):
+    print("处理标签...")
+    if dataset == 'train':
         ins_label = [rec.relation for rec in original_data]
     else:
         ins_label = []
@@ -103,22 +122,11 @@ def vectorize_data(original_data, sentence_length,
             one_hot = np.zeros(len(relation2id), dtype=np.int64)
             one_hot[rec.relation] = 1
             ins_label.append(one_hot)
-    ins_scope = np.array(ins_scope, dtype=np.int64)
     ins_label = np.array(ins_label, dtype=np.int64)
-    print("标签处理完成...")
 
-    print("保存数据集矩阵")
-    if is_training:
-        name_prefix = "train"
-    else:
-        name_prefix = "test"
-    np.save(out_path / f'{name_prefix}_word.npy', sen_word)
-    np.save(out_path / f'{name_prefix}_pos1.npy', sen_pos1)
-    np.save(out_path / f'{name_prefix}_pos2.npy', sen_pos2)
-    np.save(out_path / f'{name_prefix}_mask.npy', sen_mask)
+    name_prefix = dataset
     np.save(out_path / f'{name_prefix}_ins_label.npy', ins_label)
-    np.save(out_path / f'{name_prefix}_ins_scope.npy', ins_scope)
-    print('保存完成')
+    print("标签处理完成...")
 
 
 in_path = Path("./chinese_data/open_data/")
@@ -151,9 +159,16 @@ print(f'读到{len(relation2id)}个关系')
 print("=====训练数据=====")
 original_data = load_data(in_path/'sent_train.txt',
                           in_path/'sent_relation_train.txt')
-vectorize_data(original_data, 120, word2id, relation2id, is_training=True)
+vectorize_data(original_data, 120, word2id, dataset='train')
+vectorize_label(original_data, relation2id, dataset='train')
 
-print("=====开发测试数据=====")
+print("=====验证数据=====")
 original_data = load_data(in_path/'sent_dev.txt',
                           in_path/'sent_relation_dev.txt')
-vectorize_data(original_data, 120, word2id, relation2id, is_training=False)
+vectorize_data(original_data, 120, word2id, dataset='test') #注意 这里不叫dev了，和Config.py里的名字统一
+vectorize_label(original_data, relation2id, dataset='test')
+
+print("=====测试数据 无标=====")
+original_data = load_test_data(in_path/'sent_test.txt')
+vectorize_data(original_data, 120, word2id, dataset='predict')
+

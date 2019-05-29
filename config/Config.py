@@ -147,6 +147,19 @@ class Config(object):
 
 		self.total_recall = self.data_test_label[:, 1:].sum()
 
+	def load_predict_data(self):
+		print("Reading predict data...")
+		self.data_word_vec = np.load(os.path.join(self.data_path, 'vec.npy'))
+		self.data_test_word = np.load(os.path.join(self.data_path, 'predict_word.npy'))
+		self.data_test_pos1 = np.load(os.path.join(self.data_path, 'predict_pos1.npy'))
+		self.data_test_pos2 = np.load(os.path.join(self.data_path, 'predict_pos2.npy'))
+		self.data_test_mask = np.load(os.path.join(self.data_path, 'predict_mask.npy'))
+		self.data_test_scope = np.load(os.path.join(self.data_path, 'predict_ins_scope.npy'))
+		print("Finish reading")
+		self.test_batches = len(self.data_test_word) // self.batch_size
+		if len(self.data_test_word) % self.batch_size != 0:
+			self.test_batches += 1
+
 	def set_train_model(self, model):
 		print("Initializing training model...")
 		self.model = model
@@ -246,8 +259,7 @@ class Config(object):
 			for batch in range(self.train_batches):
 				self.get_train_batch(batch)
 				loss = self.train_one_step()
-				time_str = datetime.datetime.now().isoformat()
-				print(f"epoch {epoch} step {batch} time {time_str} | loss: {loss:.8},"
+				print(f"epoch {epoch} step {batch} | loss: {loss:.8},"
 					f" NA accuracy: {self.acc_NA.get():.8}, not NA accuracy: {self.acc_not_NA.get():.8},"
 					f" total accuracy: {self.acc_total.get():.8}", end='\r')
 			if (epoch + 1) % self.save_epoch == 0:
@@ -294,6 +306,17 @@ class Config(object):
 		auc = sklearn.metrics.auc(x = pr_x, y = pr_y)
 		print("auc: ", auc)
 		return auc, pr_x, pr_y
+
+	def predict(self, model_file):
+		self.testModel.load_state_dict(torch.load(model_file))
+		test_score = []
+		for batch in tqdm(range(self.test_batches)):
+			self.get_test_batch(batch)
+			batch_score = self.test_one_step()
+			test_score = test_score + batch_score
+		prediction = [np.argmax(score) for score in test_score]
+		return prediction
+
 	def test(self):
 		best_epoch = None
 		best_auc = 0.0
