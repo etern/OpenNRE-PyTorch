@@ -10,7 +10,7 @@ import sys
 import os
 import argparse
 
-os.environ['CUDA_VISIBLE_DEVICES'] = '4'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 parser = argparse.ArgumentParser()
 parser.add_argument('--model_name', type = str, default = 'pcnn_att', help = 'name of the model')
 args = parser.parse_args()
@@ -23,6 +23,11 @@ model = {
 	'cnn_ave': models.CNN_AVE
 }
 con = config.Config()
+con.set_word_size(300)
+con.set_data_path('./chinese_data')
+con.set_use_bag(False)
+con.set_num_classes(35)
+
 con.set_max_epoch(15)
 con.load_test_data()
 con.set_test_model(model[args.model_name])

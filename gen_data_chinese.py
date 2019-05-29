@@ -5,6 +5,7 @@ import numpy as np
 from pathlib import Path
 from collections import namedtuple
 from typing import List, Dict
+import pickle
 
 SentenceTriplet = namedtuple('SentenceTriplet', 'sent, head, tail, relation')
 
@@ -27,7 +28,6 @@ def load_data(data_file: Path, tag_file: Path) -> List[SentenceTriplet]:
 
 
 def load_word_vector(file_name: Path):
-    print("读取词向量...")
     word2id = {}
     word_vec_mat = []
     word_count = 0
@@ -53,7 +53,8 @@ def load_word_vector(file_name: Path):
     return word2id, word_vec_mat
 
 
-def vectorize_data(original_data, sentence_length, word2id: Dict[str, int], is_training=True):
+def vectorize_data(original_data, sentence_length,
+                   word2id: Dict[str, int], relation2id: Dict[str, int], is_training=True):
     sen_total = len(original_data)
     sen_word = np.zeros((sen_total, sentence_length), dtype=np.int64)
     sen_pos1 = np.zeros((sen_total, sentence_length), dtype=np.int64)
@@ -62,7 +63,7 @@ def vectorize_data(original_data, sentence_length, word2id: Dict[str, int], is_t
     sen_len = np.zeros((sen_total), dtype=np.int64)
     for i, record in enumerate(original_data):
         if i % 1000 == 0:
-            print(i)
+            print(i, end='\r')
         words = record.sent.split()
         # sen_len
         sen_len[i] = min(len(words), sentence_length)
@@ -90,6 +91,22 @@ def vectorize_data(original_data, sentence_length, word2id: Dict[str, int], is_t
                 sen_mask[i][j] = [0, 100, 0]
             else:
                 sen_mask[i][j] = [0, 0, 100]
+
+    print("处理标签...")
+    ins_scope = np.stack(
+        [list(range(sen_total)), list(range(sen_total))], axis=1)
+    if is_training:
+        ins_label = [rec.relation for rec in original_data]
+    else:
+        ins_label = []
+        for rec in original_data:
+            one_hot = np.zeros(len(relation2id), dtype=np.int64)
+            one_hot[rec.relation] = 1
+            ins_label.append(one_hot)
+    ins_scope = np.array(ins_scope, dtype=np.int64)
+    ins_label = np.array(ins_label, dtype=np.int64)
+    print("标签处理完成...")
+
     print("保存数据集矩阵")
     if is_training:
         name_prefix = "train"
@@ -99,21 +116,44 @@ def vectorize_data(original_data, sentence_length, word2id: Dict[str, int], is_t
     np.save(out_path / f'{name_prefix}_pos1.npy', sen_pos1)
     np.save(out_path / f'{name_prefix}_pos2.npy', sen_pos2)
     np.save(out_path / f'{name_prefix}_mask.npy', sen_mask)
+    np.save(out_path / f'{name_prefix}_ins_label.npy', ins_label)
+    np.save(out_path / f'{name_prefix}_ins_scope.npy', ins_scope)
+    print('保存完成')
 
 
 in_path = Path("./chinese_data/open_data/")
 out_path = Path("./chinese_data/")
 
 # 读词向量
-word2id, word_vec_mat = load_word_vector(Path("./chinese_data/sgns.weibo.word"))
+word2id_path: Path = out_path / 'word2id.pkl'
+
+if word2id_path.exists():
+    print('词向量已转换，读取..')
+    with word2id_path.open('rb') as f:
+        word2id = pickle.load(f)
+else:
+    print("加载转换词向量...")
+    word2id, word_vec_mat = load_word_vector(
+        Path("./chinese_data/sgns.weibo.word"))
+    print('保存转换后的词向量')
+    np.save(out_path / 'vec.npy', word_vec_mat)
+    with word2id_path.open('wb') as f:
+        pickle.dump(word2id, f)
+
+print('读关系列表...')
+with (in_path / 'relation2id.txt').open() as f:
+    relation2id = {}
+    for line in f:
+        name, id = line.strip('\n').split('\t')
+        relation2id[name] = int(id)
+print(f'读到{len(relation2id)}个关系')
 
 print("=====训练数据=====")
-original_data = load_data(in_path/'sent_train.txt', in_path/'sent_relation_train.txt')
-vectorize_data(original_data, 120, word2id, is_training=True)
+original_data = load_data(in_path/'sent_train.txt',
+                          in_path/'sent_relation_train.txt')
+vectorize_data(original_data, 120, word2id, relation2id, is_training=True)
 
 print("=====开发测试数据=====")
-original_data = load_data(in_path/'sent_dev.txt', in_path/'sent_relation_dev.txt')
-vectorize_data(original_data, 120, word2id, is_training=False)
-
-print('保存词向量')
-np.save(out_path / 'vec.npy', word_vec_mat)
+original_data = load_data(in_path/'sent_dev.txt',
+                          in_path/'sent_relation_dev.txt')
+vectorize_data(original_data, 120, word2id, relation2id, is_training=False)

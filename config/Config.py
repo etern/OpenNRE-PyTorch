@@ -114,8 +114,8 @@ class Config(object):
 		self.data_train_pos1 = np.load(os.path.join(self.data_path, 'train_pos1.npy'))
 		self.data_train_pos2 = np.load(os.path.join(self.data_path, 'train_pos2.npy'))
 		self.data_train_mask = np.load(os.path.join(self.data_path, 'train_mask.npy'))
+		self.data_query_label = np.load(os.path.join(self.data_path, 'train_ins_label.npy'))
 		if self.use_bag:
-			self.data_query_label = np.load(os.path.join(self.data_path, 'train_ins_label.npy'))
 			self.data_train_label = np.load(os.path.join(self.data_path, 'train_bag_label.npy'))
 			self.data_train_scope = np.load(os.path.join(self.data_path, 'train_bag_scope.npy'))
 		else:
@@ -247,8 +247,9 @@ class Config(object):
 				self.get_train_batch(batch)
 				loss = self.train_one_step()
 				time_str = datetime.datetime.now().isoformat()
-				sys.stdout.write("epoch %d step %d time %s | loss: %f, NA accuracy: %f, not NA accuracy: %f, total accuracy: %f\r" % (epoch, batch, time_str, loss, self.acc_NA.get(), self.acc_not_NA.get(), self.acc_total.get()))	
-				sys.stdout.flush()
+				print(f"epoch {epoch} step {batch} time {time_str} | loss: {loss:.8},"
+					f" NA accuracy: {self.acc_NA.get():.8}, not NA accuracy: {self.acc_not_NA.get():.8},"
+					f" total accuracy: {self.acc_total.get():.8}", end='\r')
 			if (epoch + 1) % self.save_epoch == 0:
 				print('Epoch ' + str(epoch) + ' has finished')
 				print('Saving model...')

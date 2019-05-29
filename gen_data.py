@@ -25,7 +25,7 @@ def find_pos(sentence, head, tail):
 		else:
 			p += 1
 		return p
-		
+	# head, tail可能是短语形式，如 head='Tom Hanks'
 	sentence = ' '.join(sentence.split())	
 	p1 = find(sentence, head)
 	p2 = find(sentence, tail)

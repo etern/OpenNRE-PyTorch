@@ -23,6 +23,11 @@ model = {
 	'cnn_ave': models.CNN_AVE
 }
 con = config.Config()
+con.set_word_size(300)
+con.set_data_path('./chinese_data')
+con.set_use_bag(False)
+con.set_num_classes(35)
+
 con.set_max_epoch(15)
 con.load_train_data()
 con.load_test_data()
